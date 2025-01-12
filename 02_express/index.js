@@ -1,4 +1,6 @@
 import express from "express";
+import logger from "./logger.js";
+import morgan from "morgan";
 
 const app = express();
 const port = 3000;
@@ -17,8 +19,27 @@ app.use(express.json());
 let dietData = [];
 let nextItemId = 1;
 
+const morganFormat = ":method :url :status :response-time ms";
+
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write: (message) => {
+        const logObject = {
+          method: message.split(" ")[0],
+          url: message.split(" ")[1],
+          status: message.split(" ")[2],
+          responseTime: message.split(" ")[3],
+        };
+        logger.info(JSON.stringify(logObject));
+      },
+    },
+  })
+);
+
 //add data into dietData array
 app.post("/items", (req, res) => {
+  logger.info("A post request is made");
   const { name, price } = req.body;
   const item = { id: nextItemId++, name, price };
   dietData.push(item);
@@ -53,6 +74,7 @@ app.put("/items/:id", (req, res) => {
 
 //delete item form the array
 app.delete("/items/:id", (req, res) => {
+  logger.warn("Deleted");
   const index = dietData.findIndex(
     (items) => items.id === parseInt(req.params.id)
   );
